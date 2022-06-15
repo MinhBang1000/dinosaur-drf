@@ -4,6 +4,7 @@ from rest_framework import status
 
 def created(data, code, message):
     data = {
+        "success": True,
         "code" : code,
         "message" : message,
         "data" : data
@@ -12,6 +13,7 @@ def created(data, code, message):
 
 def success(data, code, message):
     data = {
+        "success": True,
         "code" : code,
         "message" : message,
         "data" : data
@@ -20,6 +22,7 @@ def success(data, code, message):
 
 def error(code, message):
     data = {
+        "success": False,
         "code" : code,
         "message" : message
     }
@@ -27,6 +30,7 @@ def error(code, message):
 
 def deleted(code, message):
     data = {
+        "success": True,
         "code" : code,
         "message" : message
     }

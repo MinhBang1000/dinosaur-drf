@@ -1,4 +1,3 @@
-from urllib import response
 from rest_framework import serializers, views, generics, status
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
@@ -32,8 +31,8 @@ class RegisterView(generics.CreateAPIView):
         data = response.data 
         data["refresh"] = str(refresh)
         data["access"] = str(refresh.access_token)
-        fotmatter = responses.success(data=data, code=201, message="Register Successful!")
-        return Response(data=fotmatter, status=status.HTTP_201_CREATED)
+        formatter = responses.success(data=data, code=201, message="Register Successful!")
+        return Response(data=formatter, status=status.HTTP_201_CREATED)
 
 # @api_view(["POST"])
 # def logout(request):
