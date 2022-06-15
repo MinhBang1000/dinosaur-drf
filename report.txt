@@ -1,0 +1,517 @@
+- Khi thêm một khóa ngoại vào Model đã tạo nên để default một giá trị nào đó để các record có rồi sẽ match vào
+- Truyền tham số qua router bằng cách <int:id> --> Lấy ra bằng cách def get(self, request, <id>)
+- POST là phải có splash ở cuối breakpoint
+- Serializer tự động match với validate tương ứng với các trường trong model mà nó quản lý
+- Khởi tạo một Serializer thì để trong hàm xây dựng
+    + Nếu là request.data thì phải data=request.data và validate bằng is_valid phía sau đó
+    + Nếu là model đã được tạo rồi thì truyền thẳng vào không cần data=model và is_valid
+- Hàm save trong Serializer giúp ta gọi các hàm create và update được khai báo trong chính lớp Serializer đó
+- Cách save phân biệt khi nào create, khi nào update chính là lúc tạo Serializer có kèm theo đối tượng cần Update hay là không --> Khi gọi save() sẽ thực hiện
+- Model.objects.get() chỉ lấy một Model mà nó tìm thấy dù tìm trên bất kì trường nào và yêu cầu giá trị nó tìm phải là duy nhất trên trường đó nếu không nó trả về ngoại lệ
+- Create bên trong Serializer được khởi tạo giúp tạo ra một instance mới và bắt buộc trả về instance (Object lớp Model) đó.
+Trong Create ta có thể ngắn gọn Water.objects.create(**validated_data) với validated_data = request.data bên views truyền vào
+- Trong Update, ta có thể trích từng thuộc tính của instance truyền vào cho bằng với giá trị của validated_data.get('....') để thay đổi và cuối cùng là instance.save()
+Hàm này cũng bắt buộc trả về một instance (Object lớp Model).
+- Cdrf.co 
+
+Thứ 7, ngày 4 tháng 6 năm 2022
+GET, POST, PUT, DELETE request
+- Tạo thư mục cho API nằm trong một App nào đó
+- App
+    - Api
+        - views
+        - urls
+        - serializers
+    - Xóa các urls, views bên ngoài
+
+- Đặt tên serializers bằng cách Tên model + Serializer
+- Có hai hướng để viết views 
+    1. Class base views: Dựa trên Class
+        - Các class được khởi tạo và khi gọi GET POST gì đó theo urls
+        thì tự động các hành động sẽ gọi đúng các hàm post get được
+        khai báo sẵn
+    2. Function base views: Dựa trên function
+        - Thiết kế các hàm phục vụ cho GET, POST,.... bằng cách xây dựng
+        bình thường và hạn chế truy cập VD chỉ có POST mới dừng cho 
+        hàm model_create được ta dùng @api_view(['POST']) phía trên.
+        Nếu không để gì trong hàm là GET
+        - Trong hàm sẽ tự dùng request.method để kiểm tra đang ở phương
+        thức nào mà tính toán.
+        - Mỗi model là 2 hàm:   
+            - Có ID (RETRIEVE, PUT, DESTROY)
+            - Không có ID (INDEX, CREATE)
+        - Trong đó cũng tự gọi hàm is_valid của MovieSerializer và save()
+        Chính vì thế, trong MovieSerializer cũng phải khai báo và thiết kế
+        update function, create function để tự động match.
+        - Khi update thông thường:
+        instance.name = validated_data.get('name', instance.name) để khi Không
+        update thì nhận lại giá trị cũ.
+- Các công đoạn bao gồm
+    - Khi trả ra JSON một Model bất kì thì phải đóng gói qua Serializer
+    của chính Model đó được tạo trong serializers.py 
+    - POST là tạo là MovieSerializer(data=request.data)
+    - PUT là Update là MovieSerializer(instance, data=request.data)
+
+STATUS CODE
+- Khai báo bên trong Response(status=status.200) 
+- Khi thành công thì code là 200
+- Khi lỗi cú pháp 400
+- Xóa thì 204 nếu xóa được
+- Xem các cú pháp lỗi ở bên trang chủ Django Rest Framework
+
+APIView (Class Based Views)
+- from rest_framework.views import APIView
+- Các class thì sẽ được khái báo 2 class cho mỗi Model
+    1. Có ID 
+        class MovieListAV(APIView)
+    2. Không có ID
+        class MovieDetailAV(APIView)
+- Chứa các phương thức cùng tên với Method HTTP
+
+Validate In Serializer
+- Được thực thi khi gọi instance.is_valid()
+- Để overwrite MỘT FIELD Validate thì phải khai báo với cú pháp validate_<name_fields>(self, value):
+- Để validate một object hiện thời thì nạp đè hàm validate(self, data)
+- Các hàm validate phải trả về một object hoặc giá trị để dùng nó đi vào công việc tiếp theo
+- Sử dụng Validators thì có thể dùng MinValueValidator, MaxValueValidator
+- created = auto_now_add
+- updated = auto_now
+
+Serializer and core agruments
+- Là các key đặt vào trong các id = serializers.IntegerField(read_only=True)
+- read_only là một trong số đó
+
+Model Serializer
+- class MovieSerializer(serializers.ModelSerializer):
+- model = Movie
+- fields = "__all__" or ['some_fields',...]
+- exclude là ngược lại với fields 
+- Có thể khai báo thêm một trường sử dụng method để hình thành
+    1. len_name phía trên class Meta:
+        len_name = serializers.SerializerMethodField()
+    2. tạo hàm get_<len_name>(self, object):
+        return len(object.<name>)
+    3. Sau khi gửi request thì response sẽ tự động chứa len_name
+
+Django Relationship
+- Có 3 loại Relationship trong Django
+    1. One to One
+    2. One to Many --> Foreignkey
+    3. Many to Many
+- Thiết kế trong Model 
+- related_name = 'watchlist' là đi ngược lại khóa ngoại lấy ra một danh sách
+
+Nested Relationship
+- Lấy ra các lớp có quan hệ bên trong một Model
+    1. Lớp có khóa ngoại 
+    2. Lớp không có khóa ngoại: nếu bên model có khai báo thuộc tính related_name trong Foreignkey thì lúc này có thể láy ra
+        - related_name = 'watchlist'
+        - watchlist = WatchListSerializer(many=True, read_only=True) --> Tự động match
+- Tạo ra bình thường chỉ cần thêm khóa ngoại là một ID vào là create được hoặc update Được
+
+Serializer Relationship
+- Có thể custom danhh sách trả về kèm theo là Object hoặc (PK, Name, ...)
+    1. StringRelatedField
+    2. PrimaryKeyRelatedField
+- Có thể trả về cả một API để gọi riêng từng đối tượng
+    1. Phải có thiết kế API đó
+    2. Phải có đặt tên cho urls đó
+    3. Xem HyperLink
+
+HyperLinkedModelSerializer --> Dùng để thay thể instance bằng một đường dẫn Link , yêu cầu có API chi tiết đặt tên là <modelname>-detail
+- Trong serializers của lớp đó phải có waters trong fields và trên thẻ meta có thẻ gọi ra theo nhiều Cách
+    - Theo ID 
+    - Theo String 
+    - Theo Link
+    - Theo Object
+- Trong model của lớp đó chỗ khóa ngoại related_name =  waters 
+
+Generic Views 
+- Dùng để tóm gọn Code khi thực thi các tác vụ CRUD bình thường
+- Một Views đặt tên theo định dạng ModelList...Detail.... (thừa kế các mixins cần có, GenericAPIView)
+- Lúc khai báo URL phải có pk là tham số đối với ViewDetail
+
+** Tóm lai:
+- Quản lý Relationship
+    - Model khai báo
+    - Serializer ~ Resource bên Laravel quản lý, thêm vào
+    - Có thể tạo bao nhiêu Serializer nếu thích cho một Model nếu cần nhiều cách định dạng khác nhau của một response (Số trường)
+- Views quản lý việc rút gọn Code qua các Views có sẵn
+
+Kết luận 1:
+    --> Định Dạng
+        - Model
+        - Serializer
+    --> Thực thi, Rút gọ
+        - Views
+        - Urls
+
+Quy trình
+    --> Request đến URLS, Xem views nào làm --> Views nhận xử lý Logic các kiểu, Xem theo METHOD nào --> Gửi qua Serializer để bốc vỏ
+    tạo mới, cập nhật nếu cần --> Quay về views để làm các công việc (Lấy chỉ mục, tính toán, định dạng JSON (đóng gói).....) --> Trả về
+
+Concrete, GenericAPIView --> ListCreateApiView, RetrieveUpdateDestroyApiView
+- Phục vụ cho các phương thức có sẵn
+- Không cần phải cài đặt bất kỳ cái gì cả
+- Chỉ cần khai báo model, fields
+- Có thể khai báo thêm các phương thức khác nếu cần Thiết
+
+Overwrite get_queryset
+- Mục tiêu là để đáp ứng việc truy vấn trong
+- Thường các truy vấn trên toàn bộ bảng, tuy nhiên khi bạn muốn truy vấn các bình luận dựa trên một bộ phim nào đó
+    1. Chỉnh sửa URL: phim/<int:phim_id>/binhluan
+    2. Chỉnh sửa lại hàm get_queryset chỉ trả về các bình luận thuộc phim với khóa chính là PK
+- Đối hàm tạo thì ta ghi đè lại hàm perform_create(self, serializers)
+    1. Nhận về pk từ kwargs
+    2. Select obj có pk đó
+    3. Đưa nó vào trong serializers.save(phim=Phim.objects.get(pk=pk)) --> Để hàm tạo của Model Phim tự match vào khi Tạo
+    --> Viết bình luận cho một phim nào đó đã xác Định
+    4. Nhớ exclude = ('phim',) để không bắt buộc nhập khi gửi POST request
+
+ViewSet and Routers
+- Giúp người dùng không cần chú ý đến cấu trúc Router vì nó tự động
+- Có thể gom chung một lớp Views để trình bày cho cả hai phương thức không cần ID và cần ID
+- Cách làm:
+    - Khai báo lớp ModelViewSet(viewsets.....): Khai báo queryset, serializer
+    - Đăng ký Router cho viewset đó
+
+ModelViewSet cho phép và có đủ các phương thức create, list, retrieve, update, destroy
+
+
+T2, ngày 6 tháng 6 năm 2022
+Nạp đè hàm Create và perform_create, Update và perform_update
+- ManyToMany có thể dùng bằng cách https://docs.djangoproject.com/en/4.0/topics/db/examples/many_to_many/
+- Chú ý bên nào có sau thì mới setup trường ManyToMany
+- ManyToMany nếu bị dư ID utilities thì cũng được python save tự check
+
+Định dạng Response bằng to_representation
+- Có thể làm tại Custom fields
+- Có thể làm ngay tại lớp thừa kế Serializer
+- Định dạng lại bằng một response json hoặc một chuỗi
+- Khi serializer thì có thể ghi đè to_representation, nhưng nên để trong RelatedField vì nó chỉ dùng cho một nơi cần dùng còn Serializer thì dùng chung dễ bị ảnh hưởng
+- Dùng viewset khi lấy ra thì có trường review mà khi tạo thì không cần nhập trường đó
+- ReadOnlyField có thể tránh được việc POST yêu cầu trường đó mà thật chất không cần nhập nó, nhưng nếu xóa thì GET sẽ mất một trường
+
+Permissions
+- Dùng để hạn chế truy cập theo quyền
+- Dùng api-auth thì cho phép đăng nhập bằng Testing API 
+
+T3, Ngày 7 tháng 6 năm 2022
+- Serializer nạp đè phương thức get_serializer_class để có thể sử dụng nhiều hơn một serializer
+- Read_Only = True giúp ta tăng tốc, và chỉ dùng cho các lần list, get sẽ bị bỏ qua nếu dùng cho 
+Create và update
+- Tìm hiểu về depth trong serializer
+    - Model A depends on B, B depends on C 
+    - Nếu depth = 1
+        {
+            "id": 1,
+            "content": "A content",
+            "model_b": 1
+        }
+    - Nếu depth = 2
+    {
+        "id": 1,
+        "content": "A content",
+        "model_b": {
+            "id": 1,
+            "content": "B content",
+            "model_c": {
+                "id": 1,
+                "content": "C content"
+            }
+        }
+    }
+
+- Khi khai báo các cái này thì không thể Update được bất kỳ trường nào kể cả khóa ngoại
+    - category = serializers.PrimaryKeyRelatedField(read_only=True)
+    - brand = serializers.PrimaryKeyRelatedField(read_only=True)
+    - utilities = serializers.PrimaryKeyRelatedField(many=True,read_only=True)
+    - port = serializers.PrimaryKeyRelatedField(read_only=True)
+
+- Depth xài cho phương thức retrieve and list mà thôi
+- Sử dụng Serializer 2 bản một bản ghi một bản đọc, nếu xài viewset thì dùng self action nếu xài APIView thì dùng self.request.method 
+
+- Permissions chỉ có vài cái 
+- Custompermission bằng cách thừa kế các Permission sẵn có và nạp đè 2 hàm
+    - has_permissions() --> Xem người đó có permission mong muốn không, cái này gọi trước gọi pass mới gọi cái còn lại
+    - has_object_permission() --> Mặc định là xem người đang đăng nhập có phải chủ nhân không ,Chỉ hoạt động khi response trả về là một Object, dùng để kiểm tra người dùng có phải là người biết cách xử lý đối tượng hay không ví dụ đó có phải chủ tài khoản này hay không 
+- Ghi đè mã lỗi và code status thì ta dùng hai attr là message và code trong lớp thừa kế của BasePermission
+
+Authenication
+- Cài đặt trong Setting không cần cài permission  
+- Có thể áp dụng permission để check và dùng basicauthenication để đăng nhập thông qua từng URL
+- Headers Authorization Basic Base64(username:password) lên mạng hash
+** Kiểm tra quyền hạn này kia chỉ tập trung ở permission mà thôi, Authenication thì tập trung vào giúp xác thực qua API
+
+
+
+Token Authenication
+- Copy trong settings.py để đổi thành TokenAuthenication
+- Thêm vào rest_framework.authtoken
+- migrate
+** Chú ý: Để thỏa thuận đăng nhập qua API và hỗ trợ lấy self.request.user được thì phải đưa vào viewsets đó
+authentication_classes=[authentication.SessionAuthentication, authentication.BasicAuthentication] # Xác thực qua API  
+- Nếu là Token thì chỉ cần đổi BasicAuthentication Thành TokenAuthenication tại authentication_classes của viewsets đó 
+
+Login Token Authenication
+- Tạo ra App mới 
+- Trong urls include một thư viện là from rest_framework.authtoken.views import obtain_auth_token
+
+Cách làm LOGIN  --> Nhớ from user_app import models để bắt và tạo token trong đó
+- Thiết kế receive trong models của app user_app
+
+    from django.conf import settings
+    from django.db.models.signals import post_save
+    from django.dispatch import receiver
+    from rest_framework.authtoken.models import Token
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+    def create_auth_token(sender, instance=None, created=False, **kwargs):
+        if created:
+            Token.objects.create(user=instance)
+
+- Trong views thiết kế hàm có @api_view(['POST'])
+    Không cần thiết kế
+
+- Trong urls thiết kế một path thuần
+    from rest_framework.authtoken.views import obtain_auth_token
+    ....
+    path('login/', obtain_auth_token, name='login'),
+
+Cách làm Register
+- Trong views thiết kế hàm register với api_view 
+    from rest_framework.authtoken import models
+    from rest_framework.decorators import api_view
+    from user_app.api import serializers
+    from rest_framework.response import Response
+    from rest_framework import status
+
+    @api_view(['POST',])
+    def registeration(request):
+        se_user = serializers.RegisterSerializer(data=request.data)
+        data = {}
+        if se_user.is_valid():
+            created_acc = se_user.save()
+            data = {
+                'username': created_acc.username,
+                'email' : created_acc.email,
+                'token' : models.Token.objects.get(user=created_acc).key ----> Nhận về một Token 
+            }
+            return Response(data=data, status=status.HTTP_201_CREATED)
+        return Response(data={'message': 'Something went wrong when you create user'},status=status.HTTP_400_BAD_REQUEST)
+    
+- Trong serializer phải thiết kế một serializer để nhận về Model User 
+
+from multiprocessing import context
+from django.forms import ValidationError
+from rest_framework import serializers
+from django.contrib.auth import models
+
+class RegisterSerializer(serializers.ModelSerializer):
+    password2 = serializers.CharField(write_only=True)
+    
+    class Meta:
+        model=models.User 
+        fields = ['username','email','password','password2']
+        extra_kwargs = {'password': {'write_only': True}}
+
+- Không quên nạp đè phường thức save của serializer để lưu trữ một User mới
+
+    def save(self, **kwargs):
+        password = self.validated_data['password']
+        password2 = self.validated_data['password2']
+        email  = self.validated_data['email']
+        username = self.validated_data['username']
+        if password!=password2:
+            raise ValidationError({'error': 'P1 and P2 must be same!'})
+        if models.User.objects.filter(email=email).exists():
+            raise ValidationError({'error': 'This email have already exists!'})
+        new_user = models.User(username=username, email=email)
+        new_user.set_password(password)
+        new_user.save()
+        return new_user
+
+Cách làm LOGOUT --> Nhớ thêm     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ] để nó check nếu là token thì đổi thành token 
+    --> Cho phép kiểm tra token mỗi cái request
+
+    from rest_framework.authtoken import models
+    
+    Chỉ cần xóa bằng cách 
+    @api_view(['POST',])
+    def logout(request):
+        if request.method == 'POST':
+            request.user.auth_token.delete()
+            return Response(status=status.HTTP_200_OK)
+
+Sử dụng Token bằng JWT
+
+- Cài đặt 
+        REST_FRAMEWORK = {
+        'DEFAULT_AUTHENTICATION_CLASSES': [
+            # 'rest_framework.authentication.TokenAuthentication',
+            # 'rest_framework.authentication.SessionAuthentication',
+            'rest_framework_simplejwt.authentication.JWTAuthentication',
+            ]
+        }
+- Thêm urls 
+    from rest_framework.authtoken.views import obtain_auth_token
+    from django.urls import path
+    from user_app.api import views 
+    from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+    urlpatterns = [
+        # path('login/', obtain_auth_token, name='login'),
+        path('register/', views.registeration, name='register'),
+        path('logout/', views.logout, name='logout'),
+
+        path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+        path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    ]
+
+- Cần có permission.IsAuthenicated và Không có seting authenication_class trong các View 
+- Gọi API nhập username, password lấy về Token gọi là access 
+- Sử dụng bằng cách Bearer Token 
+- Refresh sau mỗi 5 phút qua urls api/token/refresh/
+    - Gửi kèm form x-form-urlencoded với trường refresh --> refresh khi nảy trả về lúc đăng nhập
+- Nếu muốn lần sau trả về kèm theo một refresh nữa thì overwrite lại settings 
+SIMPLE_JWT = {
+    'ROTATE_REFRESH_TOKENS': True,
+}
+--> Hàm get_token là để thêm một trường nào đó vào token trong lúc chưa mã hóa 
+
+
+Throttle --> Giới hạn quyền truy cập của người sử dụng
+- Setting lại trong settings.py
+    'DEFAULT_THROTTLE_CLASSES': [ # Comment này lại để không bị lúc nào cũng check
+         'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '1/day', # Người dùng ẩn danh thì 1 lần một ngày,
+        'user': '3/day' # Người dùng có tài khoản thì 3 lần một ngày
+    }
+
+
+- Dùng throttle_classes = [UserRateThrottle, AnonRateThrottle] để bắt cho chính views đó 
+- Có thể thừa kế các throttle trên, có thể khai báo ScopeRateThrottle để mô tả bên dưới qua thuộc tính throttle_scope='....' 
+
+
+Họp 1
+
+    https://www.udemy.com/course/django-rest-framework/learn/lecture/25562552?start=0#overview
+    https://docs.djangoproject.com/en/4.0/ref/contrib/postgres/fields/
+    select related 
+    fetch related
+
+Filtering, Ordering, Searching
+- Filter 
+    - Filter qua user đang đăng nhập thì lấy ra bằng cách request.user và gắn vào filter object
+    - Filter thủ công bằng fliter của object qua các tham số từ urls --> Nạp đè get_queryset
+    - Filter bằng tham số được đặt tên qua đường link: username = self.request.query_params.get('username')
+    {{BASE}}/api/testing/?username=b1805845
+
+- Django - filter 
+    - Cài đặt 
+        pip install django-filters
+        Trong setting thêm django-filters ở INSTALLEDs
+        from django_filters.rest_framework import DjangoFilterBackend để khi xài trong views 
+        from rest_framework import filters
+        filter chỉ hoạt động với generics view trở lên 
+        --> Có thể chỉ định fields mà một filter cho view có thể xài được 
+    - Nếu cài bằng filter tự động thì có thể thêm trên đường dẫn filter bằng cách kết hợp trường 
+    Vd: ...../?email=.......&age=...... thì hệ thống tự động xử lý 
+
+    - Điểm khác nhau giữa 3 loại 
+        - Filter là sẽ chia ra các tham số đưa vào trên urls ánh xạ ứng với các trường trong CSDL (trùng tên)
+        - Search là sẽ tìm trong các trường đã chọn nhưng truyền trên url một tham số search duy nhất --> Nhớ lookup (search trên trường nào trong đối tượng khóa ngoại category__category_name) trong searh_fields
+        - Ordering là sắp xếp theo các trường nào đó cho mình nhập vào qua tham số ordering trên urls và trừ là Z-A, cộng là A-Z
+
+
+Pagination 
+PageNumberPagination
+
+- Add Pagination setting --> vào REST_FRAMEWORK --> Globally
+- Chỉ cần add là chạy được rồi 
+- Cấu hình trong file pagination.py
+- Cấu hình thì ta ghi đè lớp ta cần ví dụ thay đổi PageNumberPagination để thay đổi các thuộc tính
+- Custom thì ta thừa kế xong rồi chèn vào pagination_class=Lớp ta vừa thừa kế 
+
+LimitOffsetPagination
+- Có 2 tham số nếu cài đặt mặc định limits là giới hạn nó tương đương page_size, offset nó tương đương điểm bắt đầu
+- limit=100&offset=400 vào làm tham số của lớp ghi đè nếu muốn
+- Ta cũng có thể thay đổi tên tham số trên thành size, .... hoặc start,...
+
+Cursor
+- Chỉ hoạt động với viewset và Generic view 
+- Có thể thay đổi tên của param trên url dùng để chỉ phần tiếp theo 
+- Có thể sắp xếp theo trường nào đó trong pagination thuộc tính ordering dấu trừ thì ngược, không dấu thì thuận
+
+Testing
+- reverse là lấy lại url theo tên
+- thừa kế APITestCase
+- hàm test nào cũng phải bắt đầu bằng chữ test và nằm trong file test 
+- file test của app nào test app đó
+- mục tiêu là cho nội dung response trả về giống như mong đợi --> self.assertEqual(response.status_code, status.....)
+- Khi test csdl sẽ được tạo mới không bị ảnh hưởng
+- Trước khi test login phải setUp trước để tạo tài khoản đó đã User.objects.create_user
+- Ta có thể kiểm tra Token bằng cách tạo ra request có 
+- basename có thể phân biệt được tên router list và get vd: stream-list là list stream là tên của basename 
+- truyền tham số id bằng cách trong reverse('streamplaform-detail', args=(self.stream.id, )) để gửi vào link 
+
+    from django.test import TestCase
+    from django.urls import reverse
+    from rest_framework import status
+    from rest_framework.test import APITestCase
+    from django.contrib.auth.models import User 
+    from rest_framework.authtoken.models import Token
+
+- create_user của User có thể tạo ra luôn token nếu register có tạo token 
+- Định dạng JSON hay nhất là ở các hàm list retrieve create và destroy trong views nói chung 
+khi ta nhận một response từ các hàm đó và rút trích các thuộc tính của response thoải mái 
+khởi tạo thành response mới
+        pre_response = super().list(request, *args, **kwargs)
+        response = responses.success(data=pre_response.data, code=200, message="List Dinosaur Successful !")
+        return Response(data=response, status=pre_response.status_code, headers=pre_response.headers)
+
+
+Cách upload hình ảnh 
+- Thay đổi đường dẫn đến FileSystemStorage
+    MEDIA_URL = 'media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+- Chủ yếu là ta thao tác trên fs = FileSystemStorage()
+    - Dùng phương thức save(image.name, image)
+    - Dùng phương thức url(image.name) để lấy url ra lưu vào trong CSDL
+- Chú ý: request.data["key"] hoặc request.data.get("key") chỉ gọi cái element cuối
+--> Lấy list lấy bằng getlist("key")
+- fs.delete(name) chỉ lấy đúng cái tên file còn đường dẫn tự match 
+* Tóm lại là thay MEDIA và nó match với FileSystemStorage nên ta chỉ cần thay MEDIA rồi sử dụng đối tượng FileSystemStorage
+
+T3, 14/06/2022
+- Học gửi mail bằng DRF 
+- Học sử dụng GIT 
+    - git init --> Ngay tại project đó để khởi tạo 
+    - git add <file_name> or <.> --> Để xem mình muốn chia sẽ những file nào 
+    - git commit -m "MESSAGE" --> Giống như lưu trữ snapshot bản mới, Save the changes
+        - Có thể chỉnh sửa commit --> git commit --amend -m "New message"
+        - Kiểm tra trạng thái của file trong git 
+        - Xem lại các lần commit trước --> Git log 
+- Làm login bằng trường khác ngoài username    
+    - Lấy hết key trong ordereddict--> list(od.keys())
+- Làm logout
+ 
+ T4, 15/06/2022
+ - Có thể lấy Permission ra được bằng cách Permission.objects.filter(user=user)
+ - Trong đó mỗi Model gắn liền với 4 Permission:
+    1. add_model
+    2. remove_model 
+    3. change_model
+    4. view_model
+- Có thể lấy ra để check
+- Gửi SMS bằng điện thoại
+    - pip install twilio
+    - 

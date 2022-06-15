@@ -13,6 +13,7 @@ from rest_framework import filters, pagination
 from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.decorators import api_view
+from django.template.loader import render_to_string
 
 class CategoryViewSet(customizeviews.BaseDinosaurViewSet):
     queryset=Category.objects.all()
@@ -55,7 +56,7 @@ class CountryViewSet(customizeviews.BaseDinosaurViewSet):
 
 class DinosaurViewSet(customizeviews.BaseDinosaurViewSet):
     queryset=Dinosaur.objects.all()
-    permission_classes=[]
+    permission_classes=[permissions.IsAuthenticatedOrReadOnly]
     parser_classes=[MultiPartParser]
 
     # Filter
@@ -122,8 +123,9 @@ def mail(request, id):
     except Dinosaur.DoesNotExist:
         return responses.error(code=404, message="Model with this key is not found!")
     subject="Information of "+dinosaur.name+". Detail Version"
-    message=f"- Name: {dinosaur.name}\n- Spell: {dinosaur.spell}\n- Explain: {dinosaur.explain}\n- Category: {dinosaur.category.name}"
+    # message=f"- Name: {dinosaur.name}\n- Spell: {dinosaur.spell}\n- Explain: {dinosaur.explain}\n- Category: {dinosaur.category.name}"
+    message = render_to_string("mail.html")
     email_from=settings.EMAIL_HOST_USER
     recipient_list = ["bradonleminhbang1@gmail.com", ]
-    send_mail(subject, message, email_from, recipient_list)
+    send_mail(subject, "Detail Page Of Dinosaur", email_from, recipient_list, html_message=message)
     return Response(data=responses.success(data=[],code=200,message="Send Mail Successful!"),status=status.HTTP_200_OK)

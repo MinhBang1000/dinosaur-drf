@@ -7,17 +7,19 @@ from user_app.api import responses
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field=User.EMAIL_FIELD
     # Custom Serializer For Login By Email 
     def validate(self, attrs):
         password = attrs["password"]
-        email = attrs["username"]
+        email = attrs["email"]
         try: 
             # Bằng email
             user = User.objects.get(email=email)
             username = user.username
         except User.DoesNotExist:
             # Bằng username
-            username = email
+            # username = email
+            raise ValidationError("Không chạy bằng username!")
         data = {
             "username": username,
             "password": password
@@ -44,7 +46,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         ]
         extra_kwargs={"password": {"write_only":True} }
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data["token"] = Token.objects.get(user=instance).key
-        return responses.created(data,201,"Register Successful !")
+    # Xài lại Token bình thường thì mở chỗ này ra
+    # def to_representation(self, instance):
+    #     data = super().to_representation(instance)
+    #     data["token"] = Token.objects.get(user=instance).key
+    #     return responses.created(data,201,"Register Successful !")
