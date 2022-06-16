@@ -56,7 +56,7 @@ class CountryViewSet(customizeviews.BaseDinosaurViewSet):
 
 class DinosaurViewSet(customizeviews.BaseDinosaurViewSet):
     queryset=Dinosaur.objects.all()
-    permission_classes=[permissions.IsAuthenticatedOrReadOnly]
+    permission_classes=[permissions.IsAuthenticated]
     parser_classes=[MultiPartParser]
 
     # Filter

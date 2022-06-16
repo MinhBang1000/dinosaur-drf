@@ -18,16 +18,12 @@ class RegisterView(generics.CreateAPIView):
         user_created = serializer.save()
         password=serializer.validated_data["password"]
         user_created.set_password(password)
-        data = {
-            "username": user_created.username,
-            "password": password
-        }
-        self.user_created = authenticate(**data)
+        self.user_created = user_created
 
     # Use for JWT TOKEN CREATED
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
-        refresh = tokens.RefreshToken(self.user_created)
+        refresh = tokens.RefreshToken.for_user(self.user_created)
         data = response.data 
         data["refresh"] = str(refresh)
         data["access"] = str(refresh.access_token)
